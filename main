@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>মেট্রো রান: ঢাকা চেজ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'SolaimanLipi', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #gameCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 1;
+            touch-action: none;
+        }
+        #errorBox {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            max-width: min(92vw, 440px);
+            background: rgba(127, 29, 29, 0.96);
+            border: 2px solid #fca5a5;
+            color: #ffffff;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            line-height: 1.4;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            word-break: break-word;
+        }
+        #hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .hud-left {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.86);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 14px;
+            padding: 7px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+        }
+        .hud-label {
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.15;
+        }
+        .hud-dist {
+            font-size: 18px;
+            font-weight: 800;
+            color: #34d399;
+            line-height: 1.15;
+        }
+        .hud-best {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fde047;
+            line-height: 1.15;
+        }
+        .hud-sep {
+            width: 1px;
+            height: 24px;
+            background: rgba(148, 163, 184, 0.35);
+        }
+        #villainAlert {
+            background: rgba(185, 28, 28, 0.94);
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffffff;
+            animation: alertPulse 0.75s infinite alternate;
+        }
+        @keyframes alertPulse {
+            from { transform: scale(0.98); }
+            to { transform: scale(1.03); }
+        }
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        .card-counter-box {
+            background: rgba(88, 28, 135, 0.92);
+            border: 2px solid #e879f9;
+            border-radius: 14px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
+        }
+        .mini-purple-card {
+            width: 34px;
+            height: 22px;
+            border-radius: 4px;
+            background: linear-gradient(135deg, #9333ea, #581c87);
+            border: 1px solid #facc15;
+            padding: 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .mini-card-top {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .mini-flag {
+            width: 6px;
+            height: 5px;
+            border-radius: 2px;
+            background: #16a34a;
+            border: 1px solid #ef4444;
+        }
+        .mini-card-txt {
+            font-size: 5px;
+            font-weight: 800;
+            color: #fde047;
+            line-height: 1;
+        }
+        .mini-card-bot {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .mini-photo {
+            width: 7px;
+            height: 9px;
+            background: #ffffff;
+            border-radius: 1px;
+        }
+        .mini-chip {
+            width: 6px;
+            height: 5px;
+            background: #facc15;
+            border-radius: 1px;
+        }
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .icon-btn:active {
+            transform: scale(0.92);
+        }
+        #mobileControls {
+            position: fixed;
+            bottom: 14px;
+            left: 0;
+            width: 100%;
+            padding: 0 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .ctrl-cluster {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .m-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+            touch-action: manipulation;
+        }
+        .m-btn:active {
+            background: #10b981;
+            border-color: #a7f3d0;
+            transform: scale(0.92);
+        }
+        .m-btn .sym {
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .m-btn .cap {
+            font-size: 10px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-top: 2px;
+        }
+        .screen-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            z-index: 30;
+            overflow-y: auto;
+            touch-action: auto;
+        }
+        .start-card {
+            width: 100%;
+            max-width: 920px;
+            background: #0f172a;
+            border: 2px solid rgba(125, 211, 252, 0.35);
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .header-center {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .top-tag {
+            display: inline-block;
+            background: rgba(14, 165, 233, 0.2);
+            border: 1px solid #38bdf8;
+            color: #bae6fd;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 999px;
+            margin-bottom: 4px;
+        }
+        .main-title {
+            font-size: clamp(22px, 5vw, 34px);
+            font-weight: 800;
+            color: #fde047;
+            line-height: 1.2;
+        }
+        .sub-note {
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-top: 3px;
+        }
+        .start-btn {
+            width: 100%;
+            padding: 13px 18px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #022c22;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 22px rgba(16, 185, 129, 0.4);
+            margin-bottom: 12px;
+            touch-action: manipulation;
+        }
+        .start-btn:active {
+            transform: scale(0.98);
+        }
+        .block-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fde047;
+            margin-bottom: 8px;
+        }
+        .roster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .runner-card {
+            background: rgba(30, 41, 59, 0.78);
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background-color 0.15s;
+        }
+        .runner-card.active {
+            border-color: #10b981;
+            background: rgba(6, 78, 59, 0.45);
+        }
+        .runner-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .portrait-canvas {
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .runner-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+        .runner-meta {
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.3;
+        }
+        .audio-controls-strip {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(148, 163, 184, 0.25);
+        }
+        .add-audio-btn {
+            background: #7e22ce;
+            color: #ffffff;
+            border: 1px solid #d8b4fe;
+            border-radius: 9px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .add-audio-btn:active {
+            transform: scale(0.95);
+        }
+        .test-audio-btn {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid #34d399;
+            border-radius: 9px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .test-audio-btn:active {
+            transform: scale(0.95);
+        }
+        .clear-audio-btn {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid #f87171;
+            border-radius: 9px;
+            padding: 5px 7px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .audio-count-txt {
+            font-size: 11px;
+            color: #fde047;
+            font-weight: 700;
+        }
+        .villain-row {
+            background: rgba(127, 29, 29, 0.35);
+            border: 1px solid rgba(251, 113, 133, 0.5);
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .villain-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1 1 260px;
+        }
+        .help-foot {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .dialog-box {
+            width: 100%;
+            max-width: 380px;
+            background: #0f172a;
+            border: 2px solid #475569;
+            border-radius: 20px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
+        .dialog-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 8px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="errorBox" class="hidden"></div>
+
+    <!-- ইন-গেম HUD -->
+    <div id="hud" class="hidden">
+        <div class="hud-left">
+            <div class="hud-panel">
+                <div>
+                    <div class="hud-label">দূরত্ব</div>
+                    <div id="hudDist" class="hud-dist">0 m</div>
+                </div>
+                <div class="hud-sep"></div>
+                <div>
+                    <div class="hud-label">সেরা স্কোর</div>
+                    <div id="hudBest" class="hud-best">0 m</div>
+                </div>
+            </div>
+            <div id="villainAlert" class="hidden">⚠️ বংগবল্টূ একদম পেছনে!</div>
+        </div>
+        <div class="hud-right">
+            <div class="card-counter-box">
+                <div class="mini-purple-card">
+                    <div class="mini-card-top">
+                        <span class="mini-flag"></span>
+                        <span class="mini-card-txt">ফ্যামিলি কার্ড</span>
+                    </div>
+                    <div class="mini-card-bot">
+                        <span class="mini-photo"></span>
+                        <span class="mini-chip"></span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 10px; color: #f3e8ff; line-height: 1.1;">ফ্যামিলি কার্ড</div>
+                    <div id="hudCards" style="font-size: 17px; font-weight: 800; color: #fde047; line-height: 1.1;">0</div>
+                </div>
+            </div>
+            <button type="button" id="btnSoundToggle" class="icon-btn" title="সাউন্ড চালু/বন্ধ">🔊</button>
+            <button type="button" id="btnPauseGame" class="icon-btn" title="বিরতি">⏸</button>
+        </div>
+    </div>
+
+    <!-- অন-স্ক্রিন মোবাইল কন্ট্রোল বাটন -->
+    <div id="mobileControls" class="hidden">
+        <div class="ctrl-cluster">
+            <button type="button" id="btnLeft" class="m-btn">
+                <span class="sym">◀</span>
+                <span class="cap">বামে</span>
+            </button>
+            <button type="button" id="btnRight" class="m-btn">
+                <span class="sym">▶</span>
+                <span class="cap">ডানে</span>
+            </button>
+        </div>
+        <div class="ctrl-cluster">
+            <button type="button" id="btnSlide" class="m-btn">
+                <span class="sym">▼</span>
+                <span class="cap">স্লাইড</span>
+            </button>
+            <button type="button" id="btnJump" class="m-btn">
+                <span class="sym">▲</span>
+                <span class="cap">লাফ</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- স্টার্ট মেনু ও ক্যারেক্টার সিলেকশন -->
+    <div id="startScreen" class="screen-overlay">
+        <div class="start-card">
+            <div class="header-center">
+                <div class="top-tag">🚇 ঢাকার মেট্রোরেলের নিচের রাস্তা</div>
+                <h1 class="main-title">মেট্রো রান: ঢাকা চেজ</h1>
+                <p class="sub-note">বেগুনি <strong style="color:#e879f9;">ফ্যামিলি কার্ড</strong> সংগ্রহ করো, বাধা এড়াও আর <strong style="color:#fda4af;">বংগবল্টূ</strong>-র হাত থেকে পালাও!</p>
+            </div>
+            <button type="button" id="btnStartNow" class="start-btn">▶ খেলা শুরু করো</button>
+            <div class="block-label">ক্যারেক্টার বেছে নাও ও সরাসরি ডায়লগ অডিও যোগ করো:</div>
+
+            <div class="roster-grid">
+                <!-- ১. হাসনাত আব্দুল্লাহ -->
+                <div id="cardHasnat" data-char="hasnat" class="runner-card active">
+                    <div class="runner-top">
+                        <canvas id="portraitHasnat" width="64" height="74" class="portrait-canvas"></canvas>
+                        <div>
+                            <div class="runner-name">হাসনাত আব্দুল্লাহ</div>
+                            <div class="runner-meta">বয়স ২৫-৩০ • হালকা মোটা, ক্লিন শেভ, শার্ট ও প্যান্ট</div>
+                        </div>
+                    </div>
+                    <div class="audio-controls-strip">
+                        <button type="button" data-audio-target="hasnat" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                        <button type="button" data-test-target="hasnat" class="test-audio-btn">▶ শুনুন</button>
+                        <button type="button" data-clear-target="hasnat" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                        <span id="countHasnat" class="audio-count-txt">০টি অডিও</span>
+                        <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="hasnat" class="hidden">
+                    </div>
+                </div>
+
+                <!-- ২. শফিকুল্লাহ -->
+                <div id="cardShafiq" data-char="shafiq" class="runner-card">
+                    <div class="runner-top">
+                        <canvas id="portraitShafiq" width="64" height="74" class="portrait-canvas"></canvas>
+                        <div>
+                            <div class="runner-name">শফিকুল্লাহ</div>
+                            <div class="runner-meta">বয়স ৬৫+ • সাদা চুল ও লম্বা সাদা দাড়ি, সাদা টুপি, পাঞ্জাবি-পায়জামা</div>
+                        </div>
+                    </div>
+                    <div class="audio-controls-strip">
+                        <button type="button" data-audio-target="shafiq" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                        <button type="button" data-test-target="shafiq" class="test-audio-btn">▶ শুনুন</button>
+                        <button type="button" data-clear-target="shafiq" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                        <span id="countShafiq" class="audio-count-txt">০টি অডিও</span>
+                        <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="shafiq" class="hidden">
+                    </div>
+                </div>
+
+                <!-- ৩. তারেক -->
+                <div id="cardTareq" data-char="tareq" class="runner-card">
+                    <div class="runner-top">
+                        <canvas id="portraitTareq" width="64" height="74" class="portrait-canvas"></canvas>
+                        <div>
+                            <div class="runner-name">তারেক</div>
+                            <div class="runner-meta">বয়স ৪০-৪৫ • মাঝারি গড়ন, চুল কম, ক্লিন শেভ, চশমা, কোট-শার্ট</div>
+                        </div>
+                    </div>
+                    <div class="audio-controls-strip">
+                        <button type="button" data-audio-target="tareq" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                        <button type="button" data-test-target="tareq" class="test-audio-btn">▶ শুনুন</button>
+                        <button type="button" data-clear-target="tareq" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                        <span id="countTareq" class="audio-count-txt">০টি অডিও</span>
+                        <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="tareq" class="hidden">
+                    </div>
+                </div>
+
+                <!-- ৪. হাসিনা -->
+                <div id="cardHasina" data-char="hasina" class="runner-card">
+                    <div class="runner-top">
+                        <canvas id="portraitHasina" width="64" height="74" class="portrait-canvas"></canvas>
+                        <div>
+                            <div class="runner-name">হাসিনা</div>
+                            <div class="runner-meta">বয়স ৫৫ • মোটা গড়ন, মহিলা, সাদা-লাল পাড়ের শাড়ি ও মাথায় ঘোমটা</div>
+                        </div>
+                    </div>
+                    <div class="audio-controls-strip">
+                        <button type="button" data-audio-target="hasina" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                        <button type="button" data-test-target="hasina" class="test-audio-btn">▶ শুনুন</button>
+                        <button type="button" data-clear-target="hasina" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                        <span id="countHasina" class="audio-count-txt">০টি অডিও</span>
+                        <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="hasina" class="hidden">
+                    </div>
+                </div>
+
+                <!-- ৫. আব্দুল্লাহ -->
+                <div id="cardAbdullah" data-char="abdullah" class="runner-card">
+                    <div class="runner-top">
+                        <canvas id="portraitAbdullah" width="64" height="74" class="portrait-canvas"></canvas>
+                        <div>
+                            <div class="runner-name">আব্দুল্লাহ</div>
+                            <div class="runner-meta">বয়স ১৯ • চিকন গড়ন, কালো পাঞ্জাবি, সবুজ টুপি ও ব্রাউন জিন্স</div>
+                        </div>
+                    </div>
+                    <div class="audio-controls-strip">
+                        <button type="button" data-audio-target="abdullah" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                        <button type="button" data-test-target="abdullah" class="test-audio-btn">▶ শুনুন</button>
+                        <button type="button" data-clear-target="abdullah" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                        <span id="countAbdullah" class="audio-count-txt">০টি অডিও</span>
+                        <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="abdullah" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <!-- মেইন ভিলেন: বংগবল্টূ -->
+            <div class="villain-row">
+                <div class="villain-info">
+                    <canvas id="portraitVillain" width="56" height="66" class="portrait-canvas"></canvas>
+                    <div>
+                        <div style="font-size: 11px; font-weight: 800; color: #fda4af;">মেইন ভিলেন</div>
+                        <div style="font-size: 14px; font-weight: 800; color: #ffffff;">বংগবল্টূ</div>
+                        <div style="font-size: 11px; color: #e2e8f0;">৬০ বছর বয়সী বৃদ্ধ • চশমা, গোঁফ, দাড়ি নেই, আঁচড়ানো চুল, সাদা পাঞ্জাবি ও কালো কোটি</div>
+                    </div>
+                </div>
+                <div class="audio-controls-strip" style="border-top: none; padding-top: 0;">
+                    <button type="button" data-audio-target="villain" class="add-audio-btn">🎵 অডিও যোগ করো</button>
+                    <button type="button" data-test-target="villain" class="test-audio-btn">▶ শুনুন</button>
+                    <button type="button" data-clear-target="villain" class="clear-audio-btn" title="সব অডিও মুছুন">✕</button>
+                    <span id="countVillain" class="audio-count-txt">০টি অডিও</span>
+                    <input type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple data-file-for="villain" class="hidden">
+                </div>
+            </div>
+
+            <div class="help-foot">
+                কীবোর্ড: ←/→ বা A/D (লেন), ↑/W/Space (লাফ), ↓/S (স্লাইড) • মোবাইলে সোয়াইপ বা নিচের বাটন ব্যবহার করো
+            </div>
+        </div>
+    </div>
+
+    <!-- পজ মেনু -->
+    <div id="pauseScreen" class="screen-overlay hidden">
+        <div class="dialog-box">
+            <h2 style="font-size: 22px; font-weight: 800; color: #fde047;">খেলা বিরতি</h2>
+            <p style="font-size: 13px; color: #cbd5e1; margin-top: 4px;">দৌড় চালিয়ে যাও বা মেনুতে ফিরে যাও।</p>
+            <button type="button" id="btnResumeGame" class="dialog-btn" style="background: #10b981; color: #022c22;">▶ চালিয়ে যাও</button>
+            <button type="button" id="btnBackMenuFromPause" class="dialog-btn" style="background: #334155; color: #ffffff;">মেনুতে ফিরে যাও</button>
+        </div>
+    </div>
+
+    <!-- গেম ওভার স্ক্রিন -->
+    <div id="gameOverScreen" class="screen-overlay hidden">
+        <div class="dialog-box" style="border-color: #fb7185;">
+            <h2 style="font-size: 24px; font-weight: 800; color: #fda4af;">বংগবল্টূ ধরে ফেলেছে!</h2>
+            <p id="gameOverCause" style="font-size: 13px; color: #e2e8f0; margin-top: 4px;">বাধায় ধাক্কা লেগে গতি কমে গিয়েছিল।</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0;">
+                <div style="background: #1e293b; border-radius: 12px; padding: 10px;">
+                    <div style="font-size: 11px; color: #94a3b8;">দূরত্ব</div>
+                    <div id="endDist" style="font-size: 20px; font-weight: 800; color: #34d399;">0 m</div>
+                </div>
+                <div style="background: #3b0764; border: 1px solid #c084fc; border-radius: 12px; padding: 10px;">
+                    <div style="font-size: 11px; color: #f3e8ff;">ফ্যামিলি কার্ড</div>
+                    <div id="endCards" style="font-size: 20px; font-weight: 800; color: #fde047;">0</div>
+                </div>
+            </div>
+            <button type="button" id="btnRestartGame" class="dialog-btn" style="background: #10b981; color: #022c22;">↻ আবার খেলো</button>
+            <button type="button" id="btnSelectCharAgain" class="dialog-btn" style="background: #334155; color: #ffffff;">ক্যারেক্টার বদলাও</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const errorBox = document.getElementById('errorBox');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas ? canvas.getContext('2d') : null;
+            const hudEl = document.getElementById('hud');
+            const hudDistEl = document.getElementById('hudDist');
+            const hudBestEl = document.getElementById('hudBest');
+            const hudCardsEl = document.getElementById('hudCards');
+            const villainAlertEl = document.getElementById('villainAlert');
+            const mobileControlsEl = document.getElementById('mobileControls');
+            const startScreenEl = document.getElementById('startScreen');
+            const pauseScreenEl = document.getElementById('pauseScreen');
+            const gameOverScreenEl = document.getElementById('gameOverScreen');
+            const gameOverCauseEl = document.getElementById('gameOverCause');
+            const endDistEl = document.getElementById('endDist');
+            const endCardsEl = document.getElementById('endCards');
+            const btnStartNow = document.getElementById('btnStartNow');
+            const btnSoundToggle = document.getElementById('btnSoundToggle');
+            const btnPauseGame = document.getElementById('btnPauseGame');
+            const btnResumeGame = document.getElementById('btnResumeGame');
+            const btnBackMenuFromPause = document.getElementById('btnBackMenuFromPause');
+            const btnRestartGame = document.getElementById('btnRestartGame');
+            const btnSelectCharAgain = document.getElementById('btnSelectCharAgain');
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnSlide = document.getElementById('btnSlide');
+            const btnJump = document.getElementById('btnJump');
+
+            const CHARACTER_INFO = {
+                hasnat: {
+                    name: 'হাসনাত আব্দুল্লাহ',
+                    lines: [
+                        'ফ্যামিলি কার্ডগুলো দ্রুত সংগ্রহ করো!',
+                        'মেট্রোরেলের নিচে সাবধানে কাটান!',
+                        'পেছনে বংগবল্টূ আসছে, গতি থামাবেন না!'
+                    ]
+                },
+                shafiq: {
+                    name: 'শফিকুল্লাহ',
+                    lines: [
+                        'বাবারা, সামনে বাধা আছে, খেয়াল রেখো!',
+                        'ফ্যামিলি কার্ড মিস করা যাবে না!',
+                        'আল্লাহ ভরসা, দৌড়াতে থাকো!'
+                    ]
+                },
+                tareq: {
+                    name: 'তারেক',
+                    lines: [
+                        'লেন ঠিক রেখে সামনে এগিয়ে চলো!',
+                        'ফ্যামিলি কার্ড নিলে স্কোর বাড়বে!',
+                        'বংগবল্টূ কাছাকাছি, স্পিড ধরে রাখো!'
+                    ]
+                },
+                hasina: {
+                    name: 'হাসিনা',
+                    lines: [
+                        'তাড়াতাড়ি ফ্যামিলি কার্ডগুলো কুড়িয়ে নাও!',
+                        'সামনের সিএনজি দেখে লেন বদলাও!',
+                        'পেছন থেকে বংগবল্টূ আসছে, জোরে দৌড়াও!'
+                    ]
+                },
+                abdullah: {
+                    name: 'আব্দুল্লাহ',
+                    lines: [
+                        'চলো, সব ফ্যামিলি কার্ড নিয়ে নিই!',
+                        'বাধা এড়িয়ে ফুল স্পিডে এগোতে হবে!',
+                        'বংগবল্টূ কাছে চলে আসছে, সাবধান!'
+                    ]
+                }
+            };
+
+            const VILLAIN_LINES = [
+                'দাঁড়াও! কোথায় পালাচ্ছ?!',
+                'ফ্যামিলি কার্ড নিয়ে পালাতে দেব না!',
+                'বংগবল্টূ ধরে ফেলল বলে!'
+            ];
+
+            const audioBank = {
+                hasnat: [],
+                shafiq: [],
+                tareq: [],
+                hasina: [],
+                abdullah: [],
+                villain: []
+            };
+
+            let viewW = window.innerWidth || 360;
+            let viewH = window.innerHeight || 640;
+            let selectedChar = 'hasnat';
+            let gameMode = 'MENU';
+            let soundOn = true;
+            let audioCtx = null;
+            let currentVoiceAudio = null;
+            let distanceMeters = 0;
+            let bestScoreMeters = 0;
+            let familyCardsCount = 0;
+            const baseMoveSpeed = 0.66;
+            let moveSpeed = baseMoveSpeed;
+            let scrollOffset = 0;
+            let stridePhase = 0;
+            let targetLane = 0;
+            let smoothLane = 0;
+            let jumpHeight = 0;
+            let jumpVel = 0;
+            let isInAir = false;
+            let isDucking = false;
+            let duckTimer = 0;
+            let villainCloseFactor = 0.45;
+            let stumbleCooldown = 0;
+            let cameraShake = 0;
+            let bannerMessage = 'ফ্যামিলি কার্ড সংগ্রহ করো ও বাধা এড়াও!';
+            let bannerSpeaker = 'guide';
+            let bannerTimer = 4.5;
+            let nextVoiceTimer = 3.5;
+            let obstacles = [];
+            let cards = [];
+            let sparks = [];
+            let metroTrain = { active: false, xNorm: -0.3, dir: 1, cooldown: 3.0 };
+            let lastFrameTime = 0;
+            let waveTimer = 0.4;
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            function reportError(message) {
+                if (!errorBox) return;
+                errorBox.textContent = 'ত্রুটি ধরা পড়েছে: ' + message;
+                errorBox.classList.remove('hidden');
+            }
+            window.addEventListener('error', function (ev) {
+                reportError(ev && ev.message ? ev.message : 'অজানা স্ক্রিপ্ট ত্রুটি');
+            });
+            window.addEventListener('unhandledrejection', function (ev) {
+                const reason = ev && ev.reason ? (ev.reason.message || String(ev.reason)) : 'অসমাপ্ত প্রমিজ ত্রুটি';
+                reportError(reason);
+            });
+
+            function loadBestScore() {
+                try {
+                    const saved = localStorage.getItem('metro_run_dhaka_best');
+                    const parsed = parseInt(saved || '0', 10);
+                    return Number.isNaN(parsed) ? 0 : parsed;
+                } catch (err) {
+                    return 0;
+                }
+            }
+            function saveBestScore(val) {
+                try {
+                    localStorage.setItem('metro_run_dhaka_best', String(Math.floor(val)));
+                } catch (err) {}
+            }
+
+            function traceRoundedRect(c, x, y, w, h, r) {
+                const rad = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
+                c.beginPath();
+                c.moveTo(x + rad, y);
+                c.lineTo(x + w - rad, y);
+                c.quadraticCurveTo(x + w, y, x + w, y + rad);
+                c.lineTo(x + w, y + h - rad);
+                c.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+                c.lineTo(x + rad, y + h);
+                c.quadraticCurveTo(x, y + h, x, y + h - rad);
+                c.lineTo(x, y + rad);
+                c.quadraticCurveTo(x, y, x + rad, y);
+                c.closePath();
+            }
+
+            function resizeGameCanvas() {
+                viewW = window.innerWidth || document.documentElement.clientWidth || 360;
+                viewH = window.innerHeight || document.documentElement.clientHeight || 640;
+                if (canvas) {
+                    canvas.width = viewW;
+                    canvas.height = viewH;
+                }
+            }
+
+            function ensureAudioCtx() {
+                if (!soundOn) return null;
+                try {
+                    if (!audioCtx) {
+                        const CtxClass = window.AudioContext || window.webkitAudioContext;
+                        if (CtxClass) audioCtx = new CtxClass();
+                    }
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume().catch(function () {});
+                    }
+                } catch (err) {
+                    return null;
+                }
+                return audioCtx;
+            }
+
+            function playChime(kind) {
+                if (!soundOn) return;
+                const ac = ensureAudioCtx();
+                if (!ac) return;
+                try {
+                    const t0 = ac.currentTime;
+                    const osc = ac.createOscillator();
+                    const gain = ac.createGain();
+                    osc.connect(gain);
+                    gain.connect(ac.destination);
+                    if (kind === 'card') {
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(587.33, t0);
+                        osc.frequency.setValueAtTime(880, t0 + 0.08);
+                        gain.gain.setValueAtTime(0.16, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.24);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.24);
+                    } else if (kind === 'jump') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(250, t0);
+                        osc.frequency.exponentialRampToValueAtTime(560, t0 + 0.17);
+                        gain.gain.setValueAtTime(0.14, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.18);
+                    } else if (kind === 'slide') {
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(300, t0);
+                        osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.18);
+                        gain.gain.setValueAtTime(0.09, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.19);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.19);
+                    } else if (kind === 'lane') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(360, t0);
+                        osc.frequency.setValueAtTime(440, t0 + 0.05);
+                        gain.gain.setValueAtTime(0.08, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.08);
+                    } else if (kind === 'hit') {
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(180, t0);
+                        osc.frequency.linearRampToValueAtTime(70, t0 + 0.35);
+                        gain.gain.setValueAtTime(0.22, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.36);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.36);
+                    } else {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(523.25, t0);
+                        osc.frequency.setValueAtTime(659.25, t0 + 0.07);
+                        gain.gain.setValueAtTime(0.1, t0);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+                        osc.start(t0);
+                        osc.stop(t0 + 0.18);
+                    }
+                } catch (err) {}
+            }
+
+            function triggerVoice(targetKey, isTest) {
+                if (!soundOn && !isTest) return;
+                const list = audioBank[targetKey];
+                if (Array.isArray(list) && list.length > 0) {
+                    const pick = list[Math.floor(Math.random() * list.length)];
+                    try {
+                        if (currentVoiceAudio) {
+                            currentVoiceAudio.pause();
+                        }
+                        const player = new Audio(pick.url);
+                        currentVoiceAudio = player;
+                        const p = player.play();
+                        if (p && typeof p.catch === 'function') {
+                            p.catch(function () { playChime('dialogue'); });
+                        }
+                    } catch (err) {
+                        playChime('dialogue');
+                    }
+                } else {
+                    playChime('dialogue');
+                }
+            }
+
+            function refreshAudioCountLabels() {
+                const mapIds = {
+                    hasnat: 'countHasnat',
+                    shafiq: 'countShafiq',
+                    tareq: 'countTareq',
+                    hasina: 'countHasina',
+                    abdullah: 'countAbdullah',
+                    villain: 'countVillain'
+                };
+                Object.keys(mapIds).forEach(function (key) {
+                    const el = document.getElementById(mapIds[key]);
+                    if (el) {
+                        el.textContent = audioBank[key].length + 'টি অডিও';
+                    }
+                });
+            }
+
+            function clearAudioFiles(targetKey) {
+                if (!audioBank[targetKey]) return;
+                audioBank[targetKey].forEach(function (item) {
+                    if (item && item.url) {
+                        try { URL.revokeObjectURL(item.url); } catch (e) {}
+                    }
+                });
+                audioBank[targetKey] = [];
+                refreshAudioCountLabels();
+                playChime('lane');
+            }
+
+            window.addEventListener('beforeunload', function () {
+                Object.keys(audioBank).forEach(function (key) {
+                    audioBank[key].forEach(function (item) {
+                        if (item && item.url) {
+                            try { URL.revokeObjectURL(item.url); } catch (e) {}
+                        }
+                    });
+                });
+            });
+
+            function addAudioFiles(targetKey, fileList) {
+                if (!audioBank[targetKey] || !fileList) return;
+                const files = Array.from(fileList);
+                let added = 0;
+                files.forEach(function (file) {
+                    if (!file) return;
+                    const nameLower = (file.name || '').toLowerCase();
+                    const looksAudio = (file.type && file.type.indexOf('audio/') === 0) ||
+                        /\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(nameLower);
+                    if (!looksAudio) return;
+                    try {
+                        const url = URL.createObjectURL(file);
+                        audioBank[targetKey].push({
+                            name: file.name || ('audio_' + (audioBank[targetKey].length + 1)),
+                            url: url
+                        });
+                        added++;
+                    } catch (err) {
+                        reportError('অডিও ফাইল লোড করা যায়নি: ' + err.message);
+                    }
+                });
+                if (added > 0) {
+                    refreshAudioCountLabels();
+                    playChime('lane');
+                }
+            }
+
+            function drawPurpleFamilyCard(c, cx, cy, w, h, withGlow) {
+                c.save();
+                c.translate(cx, cy);
+                if (withGlow) {
+                    c.shadowColor = 'rgba(250, 204, 21, 0.85)';
+                    c.shadowBlur = 12;
+                }
+                traceRoundedRect(c, -w / 2, -h / 2, w, h, Math.min(w, h) * 0.12);
+                const cardGrad = c.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
+                cardGrad.addColorStop(0, '#9333ea');
+                cardGrad.addColorStop(0.55, '#6b21a8');
+                cardGrad.addColorStop(1, '#4c1d95');
+                c.fillStyle = cardGrad;
+                c.fill();
+                c.lineWidth = Math.max(1.2, w * 0.025);
+                c.strokeStyle = '#facc15';
+                c.stroke();
+                c.shadowBlur = 0;
+
+                c.beginPath();
+                c.arc(-w * 0.34, -h * 0.24, h * 0.13, 0, Math.PI * 2);
+                c.fillStyle = '#16a34a';
+                c.fill();
+                c.beginPath();
+                c.arc(-w * 0.34, -h * 0.24, h * 0.075, 0, Math.PI * 2);
+                c.fillStyle = '#ef4444';
+                c.fill();
+                c.fillStyle = '#ffffff';
+                c.fillRect(-w * 0.43, -h * 0.03, w * 0.21, h * 0.42);
+
+                c.fillStyle = '#facc15';
+                traceRoundedRect(c, w * 0.29, -h * 0.04, w * 0.13, h * 0.18, 2);
+                c.fill();
+
+                c.fillStyle = '#fde047';
+                c.font = '800 ' + Math.max(7, Math.floor(h * 0.2)) + 'px "Hind Siliguri", sans-serif';
+                c.textAlign = 'left';
+                c.fillText('ফ্যামিলি কার্ড', -w * 0.16, -h * 0.14);
+
+                c.fillStyle = '#ffffff';
+                for (let b = 0; b < 14; b++) {
+                    const bw = (b % 3 === 0) ? w * 0.022 : w * 0.011;
+                    c.fillRect(-w * 0.16 + b * (w * 0.038), h * 0.28, bw, h * 0.15);
+                }
+                c.restore();
+            }
+
+            function drawRunnerOrVillain(c, roleKey, x, y, scale, phase, frontFacing, ducking) {
+                c.save();
+                c.translate(x, y);
+                c.scale(scale, scale);
+                if (ducking) {
+                    c.translate(0, 24);
+                    c.rotate(-0.32);
+                    c.scale(1.06, 0.62);
+                }
+                const swing = Math.sin(phase);
+                const bounce = Math.abs(Math.cos(phase)) * 4.5;
+
+                // মাটির ছায়া
+                c.fillStyle = 'rgba(15, 23, 42, 0.35)';
+                c.beginPath();
+                c.ellipse(0, 2, 24, 7, 0, 0, Math.PI * 2);
+                c.fill();
+                c.translate(0, -bounce);
+
+                let bodyW = 34;
+                let shirtCol = '#2563eb';
+                let trouserCol = '#1e293b';
+                let skinCol = '#e0ac69';
+                let hairCol = '#1e1b18';
+
+                if (roleKey === 'hasnat') {
+                    // ২৫-৩০, হালকা মোটা, ক্লিন শেভ, শার্ট ও প্যান্ট
+                    bodyW = 42;
+                    shirtCol = '#0284c7';
+                    trouserCol = '#1e293b';
+                    skinCol = '#dfa468';
+                    hairCol = '#171717';
+                } else if (roleKey === 'shafiq') {
+                    // ৬৫+, সাদা চুল ও লম্বা সাদা দাড়ি, সাদা টুপি, পাঞ্জাবি-পায়জামা
+                    bodyW = 34;
+                    shirtCol = '#f8fafc';
+                    trouserCol = '#f1f5f9';
+                    skinCol = '#d89f66';
+                    hairCol = '#f8fafc';
+                } else if (roleKey === 'tareq') {
+                    // ৪০-৪৫, মাঝারি গড়ন, চুল কম, ক্লিন শেভ, চশমা, কোট-শার্ট
+                    bodyW = 35;
+                    shirtCol = '#1e293b';
+                    trouserCol = '#0f172a';
+                    skinCol = '#e2ad72';
+                    hairCol = '#27272a';
+                } else if (roleKey === 'hasina') {
+                    // বয়স ৫৫, মোটা গড়ন, মহিলা, সাদা-লাল পাড়ের শাড়ি ও মাথায় ঘোমটা
+                    bodyW = 46;
+                    shirtCol = '#ffffff';
+                    trouserCol = '#ffffff';
+                    skinCol = '#e5b27a';
+                    hairCol = '#1f2937';
+                } else if (roleKey === 'abdullah') {
+                    // বয়স ১৯, চিকন গড়ন, কালো পাঞ্জাবি, সবুজ টুপি ও ব্রাউন জিন্স
+                    bodyW = 28;
+                    shirtCol = '#09090b';
+                    trouserCol = '#78350f'; // ব্রাউন জিন্স
+                    skinCol = '#e0ac69';
+                    hairCol = '#171717';
+                } else if (roleKey === 'villain') {
+                    // বংগবল্টূ: ৬০ বছর বয়সী বৃদ্ধ, চশমা, গোঁফ, দাড়ি নেই, আঁচড়ানো চুল, সাদা পাঞ্জাবি ও কালো কোটি
+                    bodyW = 36;
+                    shirtCol = '#ffffff';
+                    trouserCol = '#e2e8f0';
+                    skinCol = '#da9e63';
+                    hairCol = '#334155';
+                }
+
+                // পা
+                c.lineWidth = (roleKey === 'abdullah') ? 7.5 : 9.5;
+                c.lineCap = 'round';
+                c.strokeStyle = trouserCol;
+                c.beginPath();
+                c.moveTo(-7, -34);
+                c.lineTo(-8, -13 + swing * 7);
+                c.stroke();
+                c.beginPath();
+                c.moveTo(7, -34);
+                c.lineTo(8, -13 - swing * 7);
+                c.stroke();
+
+                // শরীর / জামা / পাঞ্জাবি / শাড়ি
+                const topY = -74;
+                const bodyH = (roleKey === 'shafiq' || roleKey === 'villain' || roleKey === 'abdullah' || roleKey === 'hasina') ? 46 : 40;
+                c.fillStyle = shirtCol;
+                traceRoundedRect(c, -bodyW / 2, topY, bodyW, bodyH, 10);
+                c.fill();
+                c.lineWidth = 1.5;
+                c.strokeStyle = 'rgba(15, 23, 42, 0.3)';
+                c.stroke();
+
+                if (roleKey === 'hasina') {
+                    // সাদা শাড়িতে লাল পাড় ও আঁচল
+                    c.fillStyle = '#dc2626';
+                    c.fillRect(-bodyW / 2 + 1, topY + bodyH - 8, bodyW - 2, 6);
+                    c.beginPath();
+                    c.moveTo(-bodyW / 2 + 2, topY + 2);
+                    c.lineTo(bodyW / 2 - 4, topY + bodyH - 8);
+                    c.lineTo(bodyW / 2 - 12, topY + bodyH - 8);
+                    c.lineTo(-bodyW / 2 + 2, topY + 12);
+                    c.closePath();
+                    c.fill();
+                } else if (roleKey === 'villain') {
+                    // বংগবল্টূ: সাদা পাঞ্জাবির ওপর কালো কোটি
+                    c.fillStyle = '#09090b';
+                    traceRoundedRect(c, -bodyW / 2 + 2, topY, bodyW - 4, 37, 7);
+                    c.fill();
+                } else if (roleKey === 'tareq' && frontFacing) {
+                    // কোটের ভেতর শার্টের কলার
+                    c.fillStyle = '#f8fafc';
+                    c.beginPath();
+                    c.moveTo(-6, topY);
+                    c.lineTo(6, topY);
+                    c.lineTo(0, topY + 17);
+                    c.closePath();
+                    c.fill();
+                } else if (roleKey === 'abdullah' && frontFacing) {
+                    // কালো পাঞ্জাবির বোতাম পট্টি
+                    c.strokeStyle = '#3f3f46';
+                    c.lineWidth = 2;
+                    c.beginPath();
+                    c.moveTo(0, topY + 2);
+                    c.lineTo(0, topY + 18);
+                    c.stroke();
+                }
+
+                // হাত
+                c.strokeStyle = (roleKey === 'villain') ? '#ffffff' : shirtCol;
+                c.lineWidth = (roleKey === 'abdullah') ? 6.5 : 8;
+                c.beginPath();
+                c.moveTo(-bodyW / 2, topY + 6);
+                c.lineTo(-bodyW / 2 - 5, topY + 25 - swing * 9);
+                c.stroke();
+                c.beginPath();
+                c.moveTo(bodyW / 2, topY + 6);
+                c.lineTo(bodyW / 2 + 5, topY + 25 + swing * 9);
+                c.stroke();
+
+                // মাথা
+                const headY = topY - 15;
+                const headR = (roleKey === 'hasnat' || roleKey === 'hasina') ? 14.5 : (roleKey === 'abdullah' ? 12 : 13.5);
+
+                if (roleKey === 'hasina') {
+                    // মাথায় সাদা ও লাল পাড় দেওয়া ঘোমটা
+                    c.fillStyle = '#ffffff';
+                    c.strokeStyle = '#dc2626';
+                    c.lineWidth = 2.5;
+                    c.beginPath();
+                    c.arc(0, headY, headR + 4, Math.PI * 0.85, Math.PI * 2.15);
+                    c.lineTo(headR + 5, headY + 15);
+                    c.lineTo(-headR - 5, headY + 15);
+                    c.closePath();
+                    c.fill();
+                    c.stroke();
+                }
+
+                c.fillStyle = skinCol;
+                c.beginPath();
+                c.arc(0, headY, headR, 0, Math.PI * 2);
+                c.fill();
+
+                if (roleKey === 'shafiq') {
+                    // সাদা টুপি
+                    c.fillStyle = '#ffffff';
+                    c.strokeStyle = '#cbd5e1';
+                    c.lineWidth = 1.5;
+                    c.beginPath();
+                    c.arc(0, headY - 4, headR - 1, Math.PI, 0);
+                    c.closePath();
+                    c.fill();
+                    c.stroke();
+                } else if (roleKey === 'abdullah') {
+                    // সবুজ টুপি
+                    c.fillStyle = '#16a34a';
+                    c.strokeStyle = '#14532d';
+                    c.lineWidth = 1.5;
+                    c.beginPath();
+                    c.arc(0, headY - 3, headR - 0.5, Math.PI, 0);
+                    c.closePath();
+                    c.fill();
+                    c.stroke();
+                } else if (roleKey === 'tareq') {
+                    // মাথায় চুল কম
+                    c.fillStyle = hairCol;
+                    c.beginPath();
+                    c.arc(-headR + 2, headY - 1, 4.5, Math.PI * 0.5, Math.PI * 1.6);
+                    c.arc(headR - 2, headY - 1, 4.5, Math.PI * 1.4, Math.PI * 0.5);
+                    c.fill();
+                } else if (roleKey === 'hasina') {
+                    // ঘোমটার নিচে সামনের চুল ও লাল টিপ
+                    c.fillStyle = hairCol;
+                    c.beginPath();
+                    c.arc(0, headY - 2, headR, Math.PI * 1.1, Math.PI * 1.9);
+                    c.fill();
+                } else {
+                    c.fillStyle = hairCol;
+                    c.beginPath();
+                    c.arc(0, headY - 2, headR + 0.6, Math.PI * 0.92, Math.PI * 2.08);
+                    c.fill();
+                }
+
+                if (frontFacing || roleKey === 'villain') {
+                    c.fillStyle = '#0f172a';
+                    c.beginPath();
+                    c.arc(-4.5, headY - 1, 1.7, 0, Math.PI * 2);
+                    c.arc(4.5, headY - 1, 1.7, 0, Math.PI * 2);
+                    c.fill();
+
+                    if (roleKey === 'hasina') {
+                        // কপালে ছোট লাল টিপ
+                        c.fillStyle = '#dc2626';
+                        c.beginPath();
+                        c.arc(0, headY - 5, 1.8, 0, Math.PI * 2);
+                        c.fill();
+                    }
+
+                    if (roleKey === 'tareq' || roleKey === 'villain') {
+                        // চশমা
+                        c.strokeStyle = '#0f172a';
+                        c.lineWidth = 1.5;
+                        c.strokeRect(-9, headY - 4, 7.5, 6);
+                        c.strokeRect(1.5, headY - 4, 7.5, 6);
+                        c.beginPath();
+                        c.moveTo(-1.5, headY - 1);
+                        c.lineTo(1.5, headY - 1);
+                        c.stroke();
+                    }
+                    if (roleKey === 'villain') {
+                        // বংগবল্টূর গোঁফ
+                        c.fillStyle = '#1e293b';
+                        c.beginPath();
+                        c.moveTo(-6.5, headY + 5);
+                        c.quadraticCurveTo(0, headY + 2.5, 6.5, headY + 5);
+                        c.quadraticCurveTo(0, headY + 6.5, -6.5, headY + 5);
+                        c.fill();
+                    } else if (roleKey === 'shafiq') {
+                        // লম্বা সাদা দাড়ি
+                        c.fillStyle = '#ffffff';
+                        c.strokeStyle = '#cbd5e1';
+                        c.lineWidth = 1;
+                        c.beginPath();
+                        c.moveTo(-9, headY + 3);
+                        c.quadraticCurveTo(-10, headY + 20, 0, headY + 24);
+                        c.quadraticCurveTo(10, headY + 20, 9, headY + 3);
+                        c.closePath();
+                        c.fill();
+                        c.stroke();
+                    }
+                } else if (roleKey === 'shafiq') {
+                    c.fillStyle = '#ffffff';
+                    c.beginPath();
+                    c.arc(0, headY + 7, 8.5, 0, Math.PI);
+                    c.fill();
+                }
+                c.restore();
+            }
+
+            function renderPortraits() {
+                const list = [
+                    { id: 'portraitHasnat', role: 'hasnat', x: 32, y: 70, s: 0.72 },
+                    { id: 'portraitShafiq', role: 'shafiq', x: 32, y: 70, s: 0.72 },
+                    { id: 'portraitTareq', role: 'tareq', x: 32, y: 70, s: 0.72 },
+                    { id: 'portraitHasina', role: 'hasina', x: 32, y: 70, s: 0.68 },
+                    { id: 'portraitAbdullah', role: 'abdullah', x: 32, y: 70, s: 0.72 },
+                    { id: 'portraitVillain', role: 'villain', x: 28, y: 63, s: 0.62 }
+                ];
+                list.forEach(function (item) {
+                    const el = document.getElementById(item.id);
+                    if (el && el.getContext) {
+                        const c = el.getContext('2d');
+                        c.clearRect(0, 0, el.width, el.height);
+                        drawRunnerOrVillain(c, item.role, item.x, item.y, item.s, 0.4, true, false);
+                    }
+                });
+            }
+
+            // পয়েন্ট ১ ফিক্স: ৩টি লেনের কেন্দ্র (-1, 0, 1) ও লেন ডিভাইডার দাগ (-0.5, 0.5) সুষম রাখা হয়েছে
+            function projectWorld(laneVal, yHeight, zDepth) {
+                const horizonY = viewH * 0.34;
+                const bottomRoadY = viewH * 0.94;
+                const zClamped = Math.max(-0.2, Math.min(1.2, zDepth));
+                const t = Math.pow(Math.max(0, 1 - zClamped), 1.65);
+                const groundY = horizonY + (bottomRoadY - horizonY) * t;
+                const bottomHalfW = Math.min(viewW * 0.45, 360);
+                const topHalfW = bottomHalfW * 0.14;
+                const halfRoadW = topHalfW + (bottomHalfW - topHalfW) * t;
+                // রাস্তার মোট প্রস্থ = 2 * halfRoadW; প্রতিটি লেন = (2/3) * halfRoadW
+                const laneStep = (halfRoadW * 2) / 3;
+                const screenX = viewW / 2 + laneVal * laneStep;
+                const scale = 0.16 + 0.95 * t;
+                return {
+                    x: screenX,
+                    y: groundY - yHeight * scale,
+                    groundY: groundY,
+                    scale: scale,
+                    halfRoadW: halfRoadW
+                };
+            }
+
+            function drawBrightDhakaScene(sec) {
+                if (!ctx) return;
+                const horizonY = viewH * 0.34;
+                const bottomRoadY = viewH * 0.94;
+
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+                skyGrad.addColorStop(0, '#0284c7');
+                skyGrad.addColorStop(0.55, '#38bdf8');
+                skyGrad.addColorStop(1, '#e0f2fe');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, viewW, horizonY);
+
+                const sunX = viewW * 0.8;
+                const sunY = horizonY * 0.26;
+                const rayGrad = ctx.createRadialGradient(sunX, sunY, 8, sunX, sunY, Math.max(viewW, viewH) * 0.45);
+                rayGrad.addColorStop(0, 'rgba(254, 249, 195, 0.85)');
+                rayGrad.addColorStop(0.25, 'rgba(253, 224, 71, 0.25)');
+                rayGrad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+                ctx.fillStyle = rayGrad;
+                ctx.fillRect(0, 0, viewW, horizonY + 20);
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(sunX, sunY, 18, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                [0.12, 0.42, 0.68].forEach(function (baseFrac, idx) {
+                    const cx = ((baseFrac * viewW + sec * (9 + idx * 3)) % (viewW + 140)) - 70;
+                    const cy = horizonY * (0.22 + (idx % 2) * 0.12);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+                    ctx.arc(cx + 14, cy - 4, 17, 0, Math.PI * 2);
+                    ctx.arc(cx + 28, cy, 13, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                const blockW = 56;
+                const bldgPalette = ['#93c5fd', '#bae6fd', '#fde68a', '#fbcfe8', '#c4b5fd'];
+                const signPalette = ['#ef4444', '#16a34a', '#f59e0b', '#2563eb'];
+                let bx = 0;
+                let idx = 0;
+                while (bx < viewW) {
+                    const bh = 28 + ((idx * 17) % 42);
+                    ctx.fillStyle = bldgPalette[idx % bldgPalette.length];
+                    ctx.fillRect(bx, horizonY - bh, blockW - 4, bh);
+                    ctx.fillStyle = signPalette[idx % signPalette.length];
+                    ctx.fillRect(bx + 4, horizonY - 14, blockW - 12, 8);
+                    bx += blockW;
+                    idx++;
+                }
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(0, horizonY, viewW, viewH - horizonY);
+                const pFar = projectWorld(0, 0, 1);
+                const pNear = projectWorld(0, 0, 0);
+                const roadGrad = ctx.createLinearGradient(0, horizonY, 0, bottomRoadY);
+                roadGrad.addColorStop(0, '#475569');
+                roadGrad.addColorStop(1, '#334155');
+                ctx.fillStyle = roadGrad;
+                ctx.beginPath();
+                ctx.moveTo(viewW / 2 - pFar.halfRoadW, horizonY);
+                ctx.lineTo(viewW / 2 + pFar.halfRoadW, horizonY);
+                ctx.lineTo(viewW / 2 + pNear.halfRoadW, bottomRoadY);
+                ctx.lineTo(viewW / 2 - pNear.halfRoadW, bottomRoadY);
+                ctx.closePath();
+                ctx.fill();
+
+                const slices = 18;
+                for (let i = 0; i < slices; i++) {
+                    const z1 = Math.max(0, (i - scrollOffset) / slices);
+                    const z2 = Math.min(1, (i + 1 - scrollOffset) / slices);
+                    if (z2 <= 0) continue;
+                    const s1 = projectWorld(0, 0, z1);
+                    const s2 = projectWorld(0, 0, z2);
+                    const odd = i % 2 === 0;
+                    ctx.fillStyle = odd ? '#ef4444' : '#ffffff';
+                    const cw1 = 10 * s1.scale;
+                    const cw2 = 10 * s2.scale;
+                    ctx.beginPath();
+                    ctx.moveTo(viewW / 2 - s2.halfRoadW - cw2, s2.groundY);
+                    ctx.lineTo(viewW / 2 - s2.halfRoadW, s2.groundY);
+                    ctx.lineTo(viewW / 2 - s1.halfRoadW, s1.groundY);
+                    ctx.lineTo(viewW / 2 - s1.halfRoadW - cw1, s1.groundY);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(viewW / 2 + s2.halfRoadW, s2.groundY);
+                    ctx.lineTo(viewW / 2 + s2.halfRoadW + cw2, s2.groundY);
+                    ctx.lineTo(viewW / 2 + s1.halfRoadW + cw1, s1.groundY);
+                    ctx.lineTo(viewW / 2 + s1.halfRoadW, s1.groundY);
+                    ctx.fill();
+
+                    if (i % 4 === 2) {
+                        const leftSign = projectWorld(-1.65, 20, z1);
+                        const rightSign = projectWorld(1.65, 20, z1);
+                        const sw = 32 * leftSign.scale;
+                        const sh = 14 * leftSign.scale;
+                        ctx.fillStyle = signPalette[i % signPalette.length];
+                        traceRoundedRect(ctx, leftSign.x - sw / 2, leftSign.y - sh, sw, sh, 3 * leftSign.scale);
+                        ctx.fill();
+                        ctx.fillStyle = signPalette[(i + 2) % signPalette.length];
+                        traceRoundedRect(ctx, rightSign.x - sw / 2, rightSign.y - sh, sw, sh, 3 * rightSign.scale);
+                        ctx.fill();
+                    }
+                    if (odd) {
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                        ctx.lineWidth = Math.max(1.8, 4 * s1.scale);
+                        [-0.5, 0.5].forEach(function (laneMark) {
+                            const m1 = projectWorld(laneMark, 0, z1);
+                            const m2 = projectWorld(laneMark, 0, z2);
+                            ctx.beginPath();
+                            ctx.moveTo(m1.x, m1.groundY);
+                            ctx.lineTo(m2.x, m2.groundY);
+                            ctx.stroke();
+                        });
+                    }
+                }
+
+                const deckH = Math.max(36, viewH * 0.085);
+                const deckY = horizonY - deckH - viewH * 0.055;
+                const deckGrad = ctx.createLinearGradient(0, deckY, 0, deckY + deckH);
+                deckGrad.addColorStop(0, '#f8fafc');
+                deckGrad.addColorStop(0.6, '#e2e8f0');
+                deckGrad.addColorStop(1, '#94a3b8');
+                ctx.fillStyle = deckGrad;
+                ctx.fillRect(0, deckY, viewW, deckH);
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(0, deckY, viewW, deckH);
+
+                ctx.fillStyle = '#16a34a';
+                ctx.fillRect(0, deckY + deckH * 0.55, viewW, deckH * 0.16);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(0, deckY + deckH * 0.71, viewW, deckH * 0.08);
+
+                if (metroTrain.active) {
+                    const trW = Math.min(320, viewW * 0.42);
+                    const trH = deckH * 0.78;
+                    const trX = metroTrain.xNorm * viewW - trW / 2;
+                    const trY = deckY - trH + 3;
+                    ctx.fillStyle = '#ffffff';
+                    traceRoundedRect(ctx, trX, trY, trW, trH, 7);
+                    ctx.fill();
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.fillStyle = '#16a34a';
+                    ctx.fillRect(trX + 4, trY + trH * 0.6, trW - 8, trH * 0.2);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(trX + 4, trY + trH * 0.8, trW - 8, trH * 0.08);
+                }
+
+                const pillarCount = 5;
+                for (let p = pillarCount - 1; p >= 0; p--) {
+                    const pz = (p + (1 - scrollOffset)) / pillarCount;
+                    const pLeft = projectWorld(-1.95, 0, pz);
+                    const pRight = projectWorld(1.95, 0, pz);
+                    const pw = 34 * pLeft.scale;
+                    const topP = deckY + deckH - 2;
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.fillRect(pLeft.x - pw / 2, topP, pw, pLeft.groundY - topP);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillRect(pLeft.x, topP, pw / 2, pLeft.groundY - topP);
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.fillRect(pRight.x - pw / 2, topP, pw, pRight.groundY - topP);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillRect(pRight.x, topP, pw / 2, pRight.groundY - topP);
+                }
+            }
+
+            function drawObstacleItem(obs) {
+                const pr = projectWorld(obs.lane, 0, obs.z);
+                ctx.save();
+                ctx.translate(pr.x, pr.groundY);
+                ctx.scale(pr.scale, pr.scale);
+                if (obs.kind === 'jumpBarrier') {
+                    ctx.fillStyle = '#dc2626';
+                    traceRoundedRect(ctx, -34, -32, 68, 30, 6);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-22, -28, 12, 22);
+                    ctx.fillRect(10, -28, 12, 22);
+                } else if (obs.kind === 'overheadBanner') {
+                    ctx.fillStyle = '#475569';
+                    ctx.fillRect(-38, -104, 5, 104);
+                    ctx.fillRect(33, -104, 5, 104);
+                    ctx.fillStyle = '#facc15';
+                    traceRoundedRect(ctx, -42, -104, 84, 42, 6);
+                    ctx.fill();
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = '800 11px "Hind Siliguri", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('স্লাইড করো', 0, -80);
+                } else if (obs.kind === 'cng') {
+                    ctx.fillStyle = '#15803d';
+                    traceRoundedRect(ctx, -34, -64, 68, 50, 13);
+                    ctx.fill();
+                    ctx.fillStyle = '#1e293b';
+                    traceRoundedRect(ctx, -32, -70, 64, 20, 10);
+                    ctx.fill();
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(-30, -16, 12, 16);
+                    ctx.fillRect(18, -16, 12, 16);
+                } else {
+                    [-15, 15].forEach(function (cx) {
+                        ctx.fillStyle = '#ea580c';
+                        ctx.beginPath();
+                        ctx.moveTo(cx - 10, 0);
+                        ctx.lineTo(cx, -26);
+                        ctx.lineTo(cx + 10, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(cx - 4, -14, 8, 4);
+                    });
+                }
+                ctx.restore();
+            }
+
+            function drawTopBanner() {
+                if (!ctx || gameMode !== 'PLAYING') return;
+                const text = bannerMessage || 'ফ্যামিলি কার্ড সংগ্রহ করো!';
+                ctx.save();
+                ctx.font = '700 13px "Hind Siliguri", sans-serif';
+                const measured = ctx.measureText(text).width;
+                const boxW = Math.min(viewW - 24, measured + 28);
+                const boxH = 34;
+                const boxX = (viewW - boxW) / 2;
+                const boxY = Math.max(76, viewH * 0.145);
+                ctx.fillStyle = bannerSpeaker === 'villain' ? 'rgba(159, 18, 57, 0.92)' : 'rgba(15, 23, 42, 0.9)';
+                ctx.strokeStyle = bannerSpeaker === 'villain' ? '#fda4af' : '#fde047';
+                ctx.lineWidth = 2;
+                traceRoundedRect(ctx, boxX, boxY, boxW, boxH, 12);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, boxX + boxW / 2, boxY + 22, boxW - 14);
+                ctx.restore();
+            }
+
+            function renderGameFrame(nowMs) {
+                if (!ctx) return;
+                const sec = (nowMs || 0) * 0.001;
+                ctx.save();
+                if (cameraShake > 0) {
+                    const mag = cameraShake * 14;
+                    ctx.translate((Math.random() - 0.5) * mag, (Math.random() - 0.5) * mag);
+                }
+                drawBrightDhakaScene(sec);
+
+                const drawQueue = [];
+                for (let i = 0; i < cards.length; i++) {
+                    drawQueue.push({ kind: 'card', z: cards[i].z, obj: cards[i] });
+                }
+                for (let j = 0; j < obstacles.length; j++) {
+                    drawQueue.push({ kind: 'obs', z: obstacles[j].z, obj: obstacles[j] });
+                }
+                drawQueue.sort(function (a, b) { return b.z - a.z; });
+
+                for (let k = 0; k < drawQueue.length; k++) {
+                    const item = drawQueue[k];
+                    if (item.kind === 'card') {
+                        const bob = 34 + Math.sin(sec * 5 + item.obj.phase) * 7;
+                        const cp = projectWorld(item.obj.lane, bob, item.obj.z);
+                        const spin = 0.75 + 0.25 * Math.cos(sec * 4 + item.obj.phase);
+                        ctx.save();
+                        ctx.translate(cp.x, cp.y);
+                        ctx.scale(cp.scale * spin, cp.scale);
+                        drawPurpleFamilyCard(ctx, 0, 0, 56, 36, true);
+                        ctx.restore();
+                    } else {
+                        drawObstacleItem(item.obj);
+                    }
+                }
+
+                const playerPos = projectWorld(smoothLane, jumpHeight, 0.02);
+                drawRunnerOrVillain(
+                    ctx,
+                    selectedChar,
+                    playerPos.x,
+                    playerPos.y,
+                    playerPos.scale * 1.15,
+                    stridePhase,
+                    false,
+                    isDucking
+                );
+
+                // মেইন ভিলেন: বংগবল্টূ
+                const villainZ = -0.06 * (1 - villainCloseFactor) - 0.008;
+                const villainPos = projectWorld(smoothLane * 0.92, 0, Math.max(-0.08, villainZ));
+                const villainY = viewH * 0.97 + (1 - villainCloseFactor) * 62;
+                drawRunnerOrVillain(
+                    ctx,
+                    'villain',
+                    villainPos.x,
+                    villainY,
+                    1.26,
+                    stridePhase * 1.08,
+                    true,
+                    false
+                );
+
+                for (let s = 0; s < sparks.length; s++) {
+                    const sp = sparks[s];
+                    ctx.globalAlpha = Math.max(0, sp.life / sp.maxLife);
+                    ctx.fillStyle = sp.color;
+                    ctx.beginPath();
+                    ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                drawTopBanner();
+                ctx.restore();
+            }
+
+            function updateHudTexts() {
+                if (hudDistEl) hudDistEl.textContent = Math.floor(distanceMeters) + ' m';
+                if (hudBestEl) hudBestEl.textContent = Math.floor(bestScoreMeters) + ' m';
+                if (hudCardsEl) hudCardsEl.textContent = String(familyCardsCount);
+                if (villainAlertEl) {
+                    if (villainCloseFactor > 0.62) {
+                        villainAlertEl.classList.remove('hidden');
+                    } else {
+                        villainAlertEl.classList.add('hidden');
+                    }
+                }
+            }
+
+            function spawnSparks(x, y, color, count) {
+                for (let i = 0; i < count; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 70 + Math.random() * 160;
+                    sparks.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(ang) * spd,
+                        vy: Math.sin(ang) * spd - 50,
+                        life: 0.45 + Math.random() * 0.25,
+                        maxLife: 0.7,
+                        color: color,
+                        size: 3 + Math.random() * 3.5
+                    });
+                }
+            }
+
+            function spawnRoadWave() {
+                const lanes = [-1, 0, 1].sort(function () { return Math.random() - 0.5; });
+                const obsKinds = ['jumpBarrier', 'overheadBanner', 'cng', 'cones'];
+                const obsCount = (distanceMeters > 120 && Math.random() < 0.45) ? 2 : 1;
+                for (let i = 0; i < obsCount; i++) {
+                    obstacles.push({
+                        lane: lanes[i],
+                        z: 1.0,
+                        kind: obsKinds[Math.floor(Math.random() * obsKinds.length)],
+                        resolved: false
+                    });
+                }
+                const cardLane = lanes[obsCount];
+                const totalCards = 3 + Math.floor(Math.random() * 3);
+                for (let c = 0; c < totalCards; c++) {
+                    cards.push({
+                        lane: cardLane,
+                        z: 1.0 + c * 0.045,
+                        taken: false,
+                        phase: c * 0.65
+                    });
+                }
+            }
+
+            function cycleDialogue(forcedRole) {
+                const role = forcedRole || ((villainCloseFactor > 0.66 && Math.random() < 0.45) ? 'villain' : 'player');
+                if (role === 'villain') {
+                    bannerSpeaker = 'villain';
+                    bannerMessage = VILLAIN_LINES[Math.floor(Math.random() * VILLAIN_LINES.length)];
+                    bannerTimer = 3.4;
+                    triggerVoice('villain', false);
+                } else {
+                    const info = CHARACTER_INFO[selectedChar] || CHARACTER_INFO.hasnat;
+                    bannerSpeaker = 'player';
+                    bannerMessage = info.lines[Math.floor(Math.random() * info.lines.length)];
+                    bannerTimer = 3.4;
+                    triggerVoice(selectedChar, false);
+                }
+            }
+
+            function finishGameOver(causeText) {
+                gameMode = 'GAMEOVER';
+                playChime('hit');
+                triggerVoice('villain', false);
+                const finalM = Math.floor(distanceMeters);
+                if (finalM > bestScoreMeters) {
+                    bestScoreMeters = finalM;
+                    saveBestScore(bestScoreMeters);
+                }
+                if (hudEl) hudEl.classList.add('hidden');
+                if (mobileControlsEl) mobileControlsEl.classList.add('hidden');
+                if (gameOverCauseEl) gameOverCauseEl.textContent = causeText;
+                if (endDistEl) endDistEl.textContent = finalM + ' m';
+                if (endCardsEl) endCardsEl.textContent = String(familyCardsCount);
+                if (gameOverScreenEl) gameOverScreenEl.classList.remove('hidden');
+            }
+
+            function beginNewRun() {
+                ensureAudioCtx();
+                resizeGameCanvas();
+                distanceMeters = 0;
+                familyCardsCount = 0;
+                moveSpeed = baseMoveSpeed;
+                scrollOffset = 0;
+                stridePhase = 0;
+                targetLane = 0;
+                smoothLane = 0;
+                jumpHeight = 0;
+                jumpVel = 0;
+                isInAir = false;
+                isDucking = false;
+                duckTimer = 0;
+                villainCloseFactor = 0.52;
+                stumbleCooldown = 0;
+                cameraShake = 0;
+                obstacles = [];
+                cards = [];
+                sparks = [];
+                waveTimer = 0.35;
+                nextVoiceTimer = 3.0;
+                bannerSpeaker = 'guide';
+                bannerMessage = 'ফ্যামিলি কার্ড সংগ্রহ করো ও বাধা এড়াও!';
+                bannerTimer = 3.5;
+                if (startScreenEl) startScreenEl.classList.add('hidden');
+                if (pauseScreenEl) pauseScreenEl.classList.add('hidden');
+                if (gameOverScreenEl) gameOverScreenEl.classList.add('hidden');
+                if (hudEl) hudEl.classList.remove('hidden');
+                if (mobileControlsEl) mobileControlsEl.classList.remove('hidden');
+                gameMode = 'PLAYING';
+                lastFrameTime = performance.now();
+                updateHudTexts();
+            }
+
+            function stepGame(dt) {
+                if (gameMode !== 'PLAYING') return;
+                moveSpeed = Math.min(1.45, baseMoveSpeed + distanceMeters * 0.00045);
+                distanceMeters += moveSpeed * 26 * dt;
+                scrollOffset = (scrollOffset + moveSpeed * dt * 2.5) % 1;
+                stridePhase += dt * (11 + moveSpeed * 7);
+                smoothLane += (targetLane - smoothLane) * Math.min(1, dt * 15);
+
+                if (isInAir) {
+                    jumpHeight += jumpVel * dt;
+                    jumpVel -= 1150 * dt;
+                    if (jumpHeight <= 0) {
+                        jumpHeight = 0;
+                        jumpVel = 0;
+                        isInAir = false;
+                    }
+                }
+                if (isDucking) {
+                    duckTimer -= dt;
+                    if (duckTimer <= 0) isDucking = false;
+                }
+                if (stumbleCooldown > 0) {
+                    stumbleCooldown -= dt;
+                    villainCloseFactor += (0.78 - villainCloseFactor) * dt * 4;
+                } else {
+                    villainCloseFactor += (0.30 - villainCloseFactor) * dt * 0.45;
+                }
+                if (cameraShake > 0) {
+                    cameraShake = Math.max(0, cameraShake - dt);
+                }
+
+                nextVoiceTimer -= dt;
+                if (nextVoiceTimer <= 0) {
+                    cycleDialogue();
+                    nextVoiceTimer = 5.5 + Math.random() * 3.5;
+                }
+                if (bannerTimer > 0) {
+                    bannerTimer -= dt;
+                    if (bannerTimer <= 0) {
+                        bannerSpeaker = 'guide';
+                        bannerMessage = 'ফ্যামিলি কার্ড সংগ্রহ করো ও বাধা এড়াও!';
+                    }
+                }
+
+                if (!metroTrain.active) {
+                    metroTrain.cooldown -= dt;
+                    if (metroTrain.cooldown <= 0) {
+                        metroTrain.active = true;
+                        metroTrain.dir = Math.random() < 0.5 ? 1 : -1;
+                        metroTrain.xNorm = metroTrain.dir === 1 ? -0.35 : 1.35;
+                    }
+                } else {
+                    metroTrain.xNorm += metroTrain.dir * dt * 0.4;
+                    if ((metroTrain.dir === 1 && metroTrain.xNorm > 1.45) || (metroTrain.dir === -1 && metroTrain.xNorm < -0.45)) {
+                        metroTrain.active = false;
+                        metroTrain.cooldown = 6 + Math.random() * 5;
+                    }
+                }
+
+                waveTimer -= dt * (moveSpeed / baseMoveSpeed);
+                if (waveTimer <= 0) {
+                    spawnRoadWave();
+                    waveTimer = 1.15;
+                }
+
+                for (let i = cards.length - 1; i >= 0; i--) {
+                    const cObj = cards[i];
+                    cObj.z -= moveSpeed * dt;
+                    if (!cObj.taken && cObj.z < 0.09 && cObj.z > -0.05) {
+                        if (Math.abs(cObj.lane - smoothLane) < 0.48 && jumpHeight < 95) {
+                            cObj.taken = true;
+                            familyCardsCount++;
+                            playChime('card');
+                            const cp = projectWorld(cObj.lane, 34, Math.max(0, cObj.z));
+                            spawnSparks(cp.x, cp.y, '#e879f9', 10);
+                        }
+                    }
+                    if (cObj.taken || cObj.z < -0.15) {
+                        cards.splice(i, 1);
+                    }
+                }
+
+                // ব্যালেন্সড কলিশন লজিক
+                for (let j = obstacles.length - 1; j >= 0; j--) {
+                    const oObj = obstacles[j];
+                    oObj.z -= moveSpeed * dt;
+                    if (!oObj.resolved && oObj.z < 0.065 && oObj.z > -0.045) {
+                        if (Math.abs(oObj.lane - smoothLane) < 0.42) {
+                            let cleared = false;
+                            if (oObj.kind === 'jumpBarrier') {
+                                cleared = jumpHeight > 38;
+                            } else if (oObj.kind === 'overheadBanner') {
+                                cleared = isDucking;
+                            } else if (oObj.kind === 'cng') {
+                                // সিএনজি-র ওপর দিয়ে বড় লাফ দিলে পার হওয়া যাবে, নইলে লেন বদলাতে হবে
+                                cleared = jumpHeight > 72;
+                            } else if (oObj.kind === 'cones') {
+                                if (jumpHeight > 28) {
+                                    cleared = true;
+                                } else {
+                                    oObj.resolved = true;
+                                    playChime('hit');
+                                    cameraShake = 0.35;
+                                    if (villainCloseFactor > 0.62) {
+                                        finishGameOver('কোনে হোঁচট খেতেই বংগবল্টূ ধরে ফেলেছে!');
+                                        return;
+                                    } else {
+                                        stumbleCooldown = 4.0;
+                                        villainCloseFactor = 0.8;
+                                        cycleDialogue('villain');
+                                    }
+                                }
+                            }
+                            if (!cleared && !oObj.resolved) {
+                                oObj.resolved = true;
+                                cameraShake = 0.45;
+                                finishGameOver('রাস্তার বাধায় ধাক্কা লেগে বংগবল্টূ ধরে ফেলেছে!');
+                                return;
+                            }
+                        }
+                    }
+                    if (oObj.z < -0.2) {
+                        obstacles.splice(j, 1);
+                    }
+                }
+
+                for (let s = sparks.length - 1; s >= 0; s--) {
+                    const sp = sparks[s];
+                    sp.x += sp.vx * dt;
+                    sp.y += sp.vy * dt;
+                    sp.vy += 300 * dt;
+                    sp.life -= dt;
+                    if (sp.life <= 0) {
+                        sparks.splice(s, 1);
+                    }
+                }
+                updateHudTexts();
+            }
+
+            function goLaneLeft() {
+                if (gameMode !== 'PLAYING') return;
+                if (targetLane > -1) {
+                    targetLane--;
+                    playChime('lane');
+                }
+            }
+            function goLaneRight() {
+                if (gameMode !== 'PLAYING') return;
+                if (targetLane < 1) {
+                    targetLane++;
+                    playChime('lane');
+                }
+            }
+            function doJump() {
+                if (gameMode !== 'PLAYING') return;
+                if (!isInAir) {
+                    isInAir = true;
+                    isDucking = false;
+                    jumpVel = 475;
+                    playChime('jump');
+                }
+            }
+            function doSlide() {
+                if (gameMode !== 'PLAYING') return;
+                if (isInAir) jumpVel = -520;
+                isDucking = true;
+                duckTimer = 0.65;
+                playChime('slide');
+            }
+
+            function selectRunner(charKey) {
+                if (!CHARACTER_INFO[charKey]) return;
+                selectedChar = charKey;
+                document.querySelectorAll('.runner-card').forEach(function (cardEl) {
+                    if (cardEl.getAttribute('data-char') === charKey) {
+                        cardEl.classList.add('active');
+                    } else {
+                        cardEl.classList.remove('active');
+                    }
+                });
+                playChime('lane');
+            }
+
+            function bindPress(el, fn) {
+                if (!el) return;
+                el.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    fn();
+                });
+            }
+
+            function mainLoop(nowMs) {
+                const ts = nowMs || performance.now();
+                if (!lastFrameTime) lastFrameTime = ts;
+                const dt = Math.min(0.05, Math.max(0.001, (ts - lastFrameTime) / 1000));
+                lastFrameTime = ts;
+                try {
+                    stepGame(dt);
+                    renderGameFrame(ts);
+                } catch (err) {
+                    reportError(err && err.message ? err.message : String(err));
+                }
+                requestAnimationFrame(mainLoop);
+            }
+
+            function initApp() {
+                bestScoreMeters = loadBestScore();
+                updateHudTexts();
+                refreshAudioCountLabels();
+                resizeGameCanvas();
+                renderPortraits();
+                window.addEventListener('resize', resizeGameCanvas);
+
+                document.querySelectorAll('.runner-card').forEach(function (cardEl) {
+                    cardEl.addEventListener('click', function () {
+                        const key = cardEl.getAttribute('data-char');
+                        if (key) selectRunner(key);
+                    });
+                });
+
+                document.querySelectorAll('[data-audio-target]').forEach(function (btnEl) {
+                    btnEl.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = btnEl.getAttribute('data-audio-target');
+                        const fileInput = document.querySelector('input[type="file"][data-file-for="' + target + '"]');
+                        if (fileInput) {
+                            fileInput.value = '';
+                            fileInput.click();
+                        }
+                    });
+                });
+
+                document.querySelectorAll('input[type="file"][data-file-for]').forEach(function (inpEl) {
+                    inpEl.addEventListener('change', function (e) {
+                        const target = e.target.getAttribute('data-file-for');
+                        addAudioFiles(target, e.target.files);
+                        e.target.value = '';
+                    });
+                });
+
+                document.querySelectorAll('[data-test-target]').forEach(function (testBtn) {
+                    testBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = testBtn.getAttribute('data-test-target');
+                        ensureAudioCtx();
+                        triggerVoice(target, true);
+                    });
+                });
+
+                document.querySelectorAll('[data-clear-target]').forEach(function (clrBtn) {
+                    clrBtn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const target = clrBtn.getAttribute('data-clear-target');
+                        clearAudioFiles(target);
+                    });
+                });
+
+                bindPress(btnStartNow, beginNewRun);
+                bindPress(btnRestartGame, beginNewRun);
+                bindPress(btnSelectCharAgain, function () {
+                    gameMode = 'MENU';
+                    if (gameOverScreenEl) gameOverScreenEl.classList.add('hidden');
+                    if (startScreenEl) startScreenEl.classList.remove('hidden');
+                    renderPortraits();
+                });
+                bindPress(btnPauseGame, function () {
+                    if (gameMode === 'PLAYING') {
+                        gameMode = 'PAUSED';
+                        if (pauseScreenEl) pauseScreenEl.classList.remove('hidden');
+                    }
+                });
+                bindPress(btnResumeGame, function () {
+                    if (gameMode === 'PAUSED') {
+                        gameMode = 'PLAYING';
+                        if (pauseScreenEl) pauseScreenEl.classList.add('hidden');
+                        lastFrameTime = performance.now();
+                    }
+                });
+                bindPress(btnBackMenuFromPause, function () {
+                    gameMode = 'MENU';
+                    if (pauseScreenEl) pauseScreenEl.classList.add('hidden');
+                    if (hudEl) hudEl.classList.add('hidden');
+                    if (mobileControlsEl) mobileControlsEl.classList.add('hidden');
+                    if (startScreenEl) startScreenEl.classList.remove('hidden');
+                    renderPortraits();
+                });
+                bindPress(btnSoundToggle, function () {
+                    soundOn = !soundOn;
+                    if (btnSoundToggle) btnSoundToggle.textContent = soundOn ? '🔊' : '🔇';
+                    if (!soundOn && currentVoiceAudio) {
+                        try { currentVoiceAudio.pause(); } catch (err) {}
+                    }
+                });
+
+                bindPress(btnLeft, goLaneLeft);
+                bindPress(btnRight, goLaneRight);
+                bindPress(btnJump, doJump);
+                bindPress(btnSlide, doSlide);
+
+                window.addEventListener('keydown', function (e) {
+                    if (gameMode !== 'PLAYING') return;
+                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                        e.preventDefault();
+                        goLaneLeft();
+                    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                        e.preventDefault();
+                        goLaneRight();
+                    } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+                        e.preventDefault();
+                        doJump();
+                    } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                        e.preventDefault();
+                        doSlide();
+                    }
+                });
+
+                canvas.addEventListener('touchstart', function (e) {
+                    if (!e.touches || e.touches.length === 0) return;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }, { passive: true });
+
+                canvas.addEventListener('touchend', function (e) {
+                    if (gameMode !== 'PLAYING' || !e.changedTouches || e.changedTouches.length === 0) return;
+                    const dx = e.changedTouches[0].clientX - touchStartX;
+                    const dy = e.changedTouches[0].clientY - touchStartY;
+                    const minSwipe = 28;
+                    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipe) {
+                        if (dx < 0) goLaneLeft();
+                        else goLaneRight();
+                    } else if (Math.abs(dy) > minSwipe) {
+                        if (dy < 0) doJump();
+                        else doSlide();
+                    }
+                }, { passive: true });
+
+                renderGameFrame(performance.now());
+                requestAnimationFrame(mainLoop);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        })();
+    </script>
+</body>
+</html>
